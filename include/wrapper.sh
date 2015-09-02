@@ -37,25 +37,54 @@ cat <<- EOF > /opt/exhibitor/defaults.conf
 EOF
 
 
-if [[ -n ${AWS_ACCESS_KEY_ID} ]]; then
-  cat <<- EOF > /opt/exhibitor/credentials.properties
-    com.netflix.exhibitor.s3.access-key-id=${AWS_ACCESS_KEY_ID}
-    com.netflix.exhibitor.s3.access-secret-key=${AWS_SECRET_ACCESS_KEY}
-EOF
-
-  echo "backup-extra=throttle\=&bucket-name\=${S3_BUCKET}&key-prefix\=${S3_PREFIX}&max-retries\=4&retry-sleep-ms\=30000" >> /opt/exhibitor/defaults.conf
-
-  S3_SECURITY="--s3credentials /opt/exhibitor/credentials.properties"
-  BACKUP_CONFIG="--configtype s3 --s3config ${S3_BUCKET}:${S3_PREFIX} ${S3_SECURITY} --s3region ${AWS_REGION} --s3backup true"
-else
-  BACKUP_CONFIG="--configtype file --fsconfigdir /opt/zookeeper/local_configs --filesystembackup true"
+if [ -z "${CONFIG_TYPE}" ]; then
+	echo "You must specify a configuration type"
+	exit 1
 fi
+
+case ${CONFIG_TYPE} in
+	"file")
+		BACKUP_CONFIG="--configtype file"
+		BACKUP_CONFIG+=" --fsconfigdir /opt/zookeeper/local_configs"
+		BACKUP_CONFIG+=" --filesystembackup true"
+	;;
+	"s3")
+		cat <<- EOF > /opt/exhibitor/credentials.properties
+			com.netflix.exhibitor.s3.access-key-id=${AWS_ACCESS_KEY_ID}
+			com.netflix.exhibitor.s3.access-secret-key=${AWS_SECRET_ACCESS_KEY}
+		EOF
+
+		echo "backup-extra=throttle\=&bucket-name\=${S3_BUCKET}&key-prefix\=${S3_PREFIX}&max-retries\=4&retry-sleep-ms\=30000" >> /opt/exhibitor/defaults.conf
+
+		BACKUP_CONFIG="--configtype s3"
+		BACKUP_CONFIG+=" --s3config ${S3_BUCKET}:${S3_PREFIX}"
+		BACKUP_CONFIG+=" --s3credentials /opt/exhibitor/credentials.properties"
+		BACKUP_CONFIG+=" --s3region ${AWS_REGION}"
+		BACKUP_CONFIG+=" --s3backup true"
+	;;
+	"zookeeper")
+		BACKUP_CONFIG="--configtype zookeeper"
+		BACKUP_CONFIG+=" --zkconfigconnect ${ZK_CONFIG_CONNECT}"
+		BACKUP_CONFIG+=" --zkconfigexhibitorpath ${ZK_CONFIG_EXHIBITOR_PATH}"
+		BACKUP_CONFIG+=" --zkconfigexhibitorport ${zkconfigexhibitorport}"
+		BACKUP_CONFIG+=" --zkconfigzpath /exhibitor/config"
+		BACKUP_CONFIG+=" --filesystembackup true"
+	;;
+	"none")
+		BACKUP_CONFIG="--configtype none"
+		BACKUP_CONFIG+=" --noneconfigdir /opt/zookeeper/local_configs"
+		BACKUP_CONFIG+=" --filesystembackup true"
+	;;
+	*)
+		echo "Unknown CONFIG_TYPE value: ${CONFIG_TYPE}"
+		exit 1
+	;;
+esac
 
 if [[ -n ${ZK_PASSWORD} ]]; then
 	SECURITY="--security web.xml --realm Zookeeper:realm --remoteauth basic:zk"
 	echo "zk: ${ZK_PASSWORD},zk" > realm
 fi
-
 
 if [[ -n $HTTP_PROXY_HOST ]]; then
     cat <<- EOF > /opt/exhibitor/proxy.properties
@@ -63,7 +92,7 @@ if [[ -n $HTTP_PROXY_HOST ]]; then
       com.netflix.exhibitor.s3.proxy-port=${HTTP_PROXY_PORT}
       com.netflix.exhibitor.s3.proxy-username=${HTTP_PROXY_USERNAME}
       com.netflix.exhibitor.s3.proxy-password=${HTTP_PROXY_PASSWORD}
-EOF
+	EOF
 
     HTTP_PROXY="--s3proxy=/opt/exhibitor/proxy.properties"
 fi
