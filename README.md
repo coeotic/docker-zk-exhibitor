@@ -1,3 +1,6 @@
+> Forked from [mbabineau/docker-zk-exhibitor](https://github.com/mbabineau/docker-zk-exhibitor).
+> This fork has been created to add support to the _zookeeper_ and _none_ configuration types.
+
 Runs an [Exhibitor](https://github.com/Netflix/exhibitor)-managed [ZooKeeper](http://zookeeper.apache.org/) instance using S3 for backups and automatic node discovery.
 
 Available on the Docker Index as [mbabineau/zookeeper-exhibitor](https://index.docker.io/u/mbabineau/zookeeper-exhibitor/):
@@ -11,19 +14,29 @@ Available on the Docker Index as [mbabineau/zookeeper-exhibitor](https://index.d
 ### Usage
 The container expects the following environment variables to be passed in:
 
+* `CONFIG_TYPE` - the value to be passed to `--configtype`; accepts `none`, `file`, `s3`, `zookeeper`;
 * `HOSTNAME` - addressable hostname for this node (Exhibitor will forward users of the UI to this address)
+* `HTTP_PROXY_HOST` - (optional) HTTP Proxy hostname
+* `HTTP_PROXY_PORT` - (optional) HTTP Proxy port
+* `HTTP_PROXY_USERNAME` - (optional) HTTP Proxy username
+* `HTTP_PROXY_PASSWORD` - (optional) HTTP Proxy password
+* `ZK_PASSWORD` - (optional) the HTTP Basic Auth password for the "zk" user
+* `ZK_DATA_DIR` - (optional) Zookeeper data directory
+* `ZK_LOG_DIR` - (optional) Zookeeper log directory
+
+Variables for config type `s3`:
+
 * `S3_BUCKET` - (optional) bucket used by Exhibitor for backups and coordination
 * `S3_PREFIX` - (optional) key prefix within `S3_BUCKET` to use for this cluster
 * `AWS_ACCESS_KEY_ID` - (optional) AWS access key ID with read/write permissions on `S3_BUCKET`
 * `AWS_SECRET_ACCESS_KEY` - (optional) secret key for `AWS_ACCESS_KEY_ID`
 * `AWS_REGION` - (optional) the AWS region of the S3 bucket (defaults to `us-west-2`)
-* `ZK_PASSWORD` - (optional) the HTTP Basic Auth password for the "zk" user
-* `ZK_DATA_DIR` - (optional) Zookeeper data directory
-* `ZK_LOG_DIR` - (optional) Zookeeper log directory
-* `HTTP_PROXY_HOST` - (optional) HTTP Proxy hostname
-* `HTTP_PROXY_PORT` - (optional) HTTP Proxy port
-* `HTTP_PROXY_USERNAME` - (optional) HTTP Proxy username
-* `HTTP_PROXY_PASSWORD` - (optional) HTTP Proxy password
+
+Variables for config type `zookeeper`:
+
+* `ZK_CONFIG_CONNECT` - hostname and port of the zookeeper instance holding the shared config; passed to parameter `--zkconfigconnect`
+* `ZK_CONFIG_EXHIBITOR_PATH` - (optional) defaults to `/`; passed to parameter `--zkconfigexhibitorpath`
+* `ZK_CONFIG_EXHIBITOR_PORT` - (optional) defaults to `8181`; passed to parameter `--zkconfigexhibitorport`
 
 Starting the container:
 
