@@ -37,7 +37,7 @@ cat <<- EOF > /opt/exhibitor/defaults.conf
 EOF
 
 
-if [ -z "${CONFIG_TYPE}" ]; then
+if [ -z "${CONFIG_TYPE}" ]; then
 	echo "You must specify a configuration type"
 	exit 1
 fi
